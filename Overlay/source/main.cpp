@@ -140,12 +140,12 @@ public:
 	virtual tsl::elm::Element* createUI() override {
 		// A OverlayFrame is the base element every overlay consists of. This will draw the default Title and Subtitle.
 		// If you need more information in the header or want to change it's look, use a HeaderOverlayFrame.
-		auto frame = new tsl::elm::OverlayFrame("ReverseNX-RT", _isDocked ? "Change Docked Default Display Resolution" : "Change Handheld Default Display Resolution");
+		auto frame = new tsl::elm::OverlayFrame("底座转换", _isDocked ? "更改底座模式分辨率" : "更改掌机模式分辨率");
 
 		// A list that can contain sub elements and handles scrolling
 		auto list = new tsl::elm::List();
 
-		auto *clickableListItem2 = new tsl::elm::ListItem("Default");
+		auto *clickableListItem2 = new tsl::elm::ListItem("默认");
 		clickableListItem2->setClickListener([this](u64 keys) { 
 			if ((keys & HidNpadButton_A) && PluginRunning) {
 				if (_isDocked) res_mode_ptr->docked_res = res_mode_default;
@@ -199,30 +199,30 @@ public:
 	virtual tsl::elm::Element* createUI() override {
 		// A OverlayFrame is the base element every overlay consists of. This will draw the default Title and Subtitle.
 		// If you need more information in the header or want to change it's look, use a HeaderOverlayFrame.
-		auto frame = new tsl::elm::OverlayFrame("ReverseNX-RT", APP_VERSION);
+		auto frame = new tsl::elm::OverlayFrame("底座转换", "南宫镜 汉化");
 
 		// A list that can contain sub elements and handles scrolling
 		auto list = new tsl::elm::List();
 		
 		list->addItem(new tsl::elm::CustomDrawer([](tsl::gfx::Renderer *renderer, s32 x, s32 y, s32 w, s32 h) {
 			if (!SaltySD) {
-				renderer->drawString("SaltyNX is not working!", false, x, y+50, 20, renderer->a(0xF33F));
+				renderer->drawString("SaltyNX 未运行", false, x, y+50, 20, renderer->a(0xF33F));
 			}
 			else if (!check) {
 				if (closed) {
-					renderer->drawString("Game was closed! Overlay disabled!", false, x, y+20, 19, renderer->a(0xF33F));
+					renderer->drawString("游戏已关闭! ReverseNX-RT 已禁用!", false, x, y+20, 19, renderer->a(0xF33F));
 				}
 				else {
-					renderer->drawString("Game is not running! Overlay disabled!", false, x, y+20, 19, renderer->a(0xF33F));
+					renderer->drawString("游戏未运行! ReverseNX-RT 已禁用!", false, x, y+20, 19, renderer->a(0xF33F));
 				}
 			}
 			else if (!PluginRunning) {
-				renderer->drawString("Game is running.", false, x, y+20, 20, renderer->a(0xFFFF));
-				renderer->drawString("ReverseNX-RT is not running!", false, x, y+40, 20, renderer->a(0xF33F));
+				renderer->drawString("游戏正在运行.", false, x, y+20, 20, renderer->a(0xFFFF));
+				renderer->drawString("ReverseNX-RT 未运行!", false, x, y+40, 20, renderer->a(0xF33F));
 			}
 			else {
-				renderer->drawString("ReverseNX-RT is running.", false, x, y+20, 20, renderer->a(0xFFFF));
-				if (!*pluginActive) renderer->drawString("Game didn't check any mode!", false, x, y+40, 18, renderer->a(0xF33F));
+				renderer->drawString("ReverseNX-RT 正在运行.", false, x, y+20, 20, renderer->a(0xFFFF));
+				if (!*pluginActive) renderer->drawString("游戏没有检查任何模式!", false, x, y+40, 18, renderer->a(0xF33F));
 				else {
 					renderer->drawString(SystemChar, false, x, y+42, 20, renderer->a(0xFFFF));
 					renderer->drawString(DockedChar, false, x, y+64, 20, renderer->a(0xFFFF));
@@ -232,8 +232,8 @@ public:
 							renderer->drawString(DockedDDR, false, x, y+108, 20, renderer->a(0xFFFF));
 						}
 						else {
-							renderer->drawString("Default Display Resolution", false, x, y+86, 20, renderer->a(0xFFFF));
-							renderer->drawString("was not checked!", false, x, y+108, 20, renderer->a(0xFFFF));							
+							renderer->drawString("默认显示分辨率", false, x, y+86, 20, renderer->a(0xFFFF));
+							renderer->drawString("未检查!", false, x, y+108, 20, renderer->a(0xFFFF));							
 						}
 					}
 				}
@@ -243,7 +243,7 @@ public:
 
 		if (PluginRunning && *pluginActive) {
 
-			auto *clickableListItem = new tsl::elm::ListItem("Change system control");
+			auto *clickableListItem = new tsl::elm::ListItem("更改系统控制");
 			clickableListItem->setClickListener([](u64 keys) { 
 				if ((keys & HidNpadButton_A) && PluginRunning) {
 					*def = !*def;
@@ -259,7 +259,7 @@ public:
 
 			if (!*def) {
 
-				auto *clickableListItem2 = new tsl::elm::ListItem("Change mode");
+				auto *clickableListItem2 = new tsl::elm::ListItem("更改模式");
 				clickableListItem2->setClickListener([](u64 keys) { 
 					if ((keys & HidNpadButton_A) && PluginRunning) {
 						*isDocked = !*isDocked;
@@ -271,7 +271,7 @@ public:
 				list->addItem(clickableListItem2);
 
 				if (*_wasDDRused) {
-					auto *clickableListItem3 = new tsl::elm::ListItem("Change Handheld DDR");
+					auto *clickableListItem3 = new tsl::elm::ListItem("更改掌机模式 DDR");
 					clickableListItem3->setClickListener([](u64 keys) { 
 						if ((keys & HidNpadButton_A) && PluginRunning) {
 							tsl::changeTo<ResolutionModeMenu>(false);
@@ -282,7 +282,7 @@ public:
 					});
 					list->addItem(clickableListItem3);
 
-					auto *clickableListItem4 = new tsl::elm::ListItem("Change Docked DDR");
+					auto *clickableListItem4 = new tsl::elm::ListItem("更改底座模式 DDR");
 					clickableListItem4->setClickListener([](u64 keys) { 
 						if ((keys & HidNpadButton_A) && PluginRunning) {
 							tsl::changeTo<ResolutionModeMenu>(true);
@@ -295,12 +295,12 @@ public:
 				}
 			}
 
-			auto *clickableListItem3 = new tsl::elm::ListItem("Save current settings");
+			auto *clickableListItem3 = new tsl::elm::ListItem("保存当前设置");
 			clickableListItem3->setClickListener([](u64 keys) { 
 				if ((keys & HidNpadButton_A) && PluginRunning) {
 					if (writeSave())
-						snprintf(saveChar, sizeof(saveChar), "Settings saved successfully!");
-					else snprintf(saveChar, sizeof(saveChar), "Saving settings failed!");
+						snprintf(saveChar, sizeof(saveChar), "设置保存成功!");
+					else snprintf(saveChar, sizeof(saveChar), "设置保存失败!");
 					return true;
 				}
 				
@@ -332,22 +332,22 @@ public:
 				_isDocked = *isDocked;
 				i = 0;
 				
-				if (_def) sprintf(SystemChar, "Controlled by system: Yes");
-				else sprintf(SystemChar, "Controlled by system: No");
+				if (_def) sprintf(SystemChar, "由系统控制: 是");
+				else sprintf(SystemChar, "由系统控制: 否");
 
 				if (_def) {
-					if (_isDocked) sprintf(DockedChar, "Mode: Docked");
-					else sprintf(DockedChar, "Mode: Handheld");
+					if (_isDocked) sprintf(DockedChar, "模式: 底座模式");
+					else sprintf(DockedChar, "模式: 掌机模式");
 				}
 				else {
-					if (_isDocked) sprintf(DockedChar, "Mode: Fake Docked");
-					else sprintf(DockedChar, "Mode: Fake Handheld");
+					if (_isDocked) sprintf(DockedChar, "模式: 模拟底座");
+					else sprintf(DockedChar, "模式: 模拟掌机");
 				}
 
-				if (!res_mode_ptr->handheld_res) strcpy(HandheldDDR, "Handheld DDR: Default");
-				else snprintf(HandheldDDR, sizeof(HandheldDDR), "Handheld DDR: %dx%d", resolutions[res_mode_ptr->handheld_res].first, resolutions[res_mode_ptr->handheld_res].second);
-				if (!res_mode_ptr->docked_res) strcpy(DockedDDR, "Docked DDR: Default");
-				else snprintf(DockedDDR, sizeof(DockedDDR), "Docked DDR: %dx%d", resolutions[res_mode_ptr->docked_res].first, resolutions[res_mode_ptr->docked_res].second);
+				if (!res_mode_ptr->handheld_res) strcpy(HandheldDDR, "掌机模式 DDR: 默认");
+				else snprintf(HandheldDDR, sizeof(HandheldDDR), "掌机模式 DDR: %dx%d", resolutions[res_mode_ptr->handheld_res].first, resolutions[res_mode_ptr->handheld_res].second);
+				if (!res_mode_ptr->docked_res) strcpy(DockedDDR, "底座模式 DDR: 默认");
+				else snprintf(DockedDDR, sizeof(DockedDDR), "底座模式 DDR: %dx%d", resolutions[res_mode_ptr->docked_res].first, resolutions[res_mode_ptr->docked_res].second);
 			}
 			else i++;
 		}
@@ -372,7 +372,7 @@ public:
 	// Called when this Gui gets loaded to create the UI
 	// Allocate all elements on the heap. libtesla will make sure to clean them up when not needed anymore
 	virtual tsl::elm::Element* createUI() override {
-		auto frame = new tsl::elm::OverlayFrame("ReverseNX-RT", APP_VERSION);
+		auto frame = new tsl::elm::OverlayFrame("底座转换", "南宫镜 汉化");
 		return frame;
 	}
 
