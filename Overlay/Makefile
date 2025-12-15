@@ -37,17 +37,18 @@ SPACE     	:=  $(null) $(null)
 
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:= -g -Wall -O3 -ffunction-sections -fdata-sections -flto -ffast-math -fomit-frame-pointer \
+CFLAGS	:= -Os -ffunction-sections -fdata-sections -flto -ffast-math -fomit-frame-pointer \
 					-fuse-linker-plugin -finline-small-functions -fno-strict-aliasing -frename-registers -falign-functions=16 \
-					$(ARCH) $(DEFINES) -DVERSION_STRING=\"$(subst $(SPACE),\$(SPACE),${APP_VERSION})\"
+					$(ARCH) $(DEFINES) -DVERSION_STRING=\"$(subst $(SPACE),\$(SPACE),${APP_VERSION})\" -DNDEBUG
 
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -D__OVERLAY__ -I$(PORTLIBS)/include/freetype2 $(pkg-config --cflags --libs python3) -Wno-deprecated-declarations 
 CFLAGS	+=	-DAPP_VERSION=\"$(APP_VERSION)\" -DAPP_TITLE=\"$(APP_TITLE)\" -DAPP_AUTHOR=\""$(APP_AUTHOR)"\"
 
-CXXFLAGS	:= $(CFLAGS) -fexceptions -std=c++26
+CXXFLAGS	:= $(CFLAGS) -fexceptions -std=c++26 -fno-rtti -fno-exceptions -fno-rtti
 
-ASFLAGS	:=	-g $(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
+
+ASFLAGS	:=	$(ARCH)
+LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,--gc-sections -Wl,--strip-all -Wl,--discard-all -Wl,--gc-sections
 
 LIBS	:= -lnx
 
@@ -152,15 +153,15 @@ all: $(BUILD)
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@ $(BUILD) $(OUTDIR)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
-	@rm -rf SdOut
-	@mkdir -p SdOut/switch/.overlays
-	@cp -rf $(OUTPUT).ovl SdOut/switch/.overlays/
-	@cd $(CURDIR)/SdOut; zip -r -q -9 $(APP_TITLE)-Overlay.zip switch; cd $(CURDIR)
+	@rm -rf $(OUTDIR)
+	@mkdir -p $(OUTDIR)/switch/.overlays
+	@cp -rf $(OUTPUT).ovl $(OUTDIR)/switch/.overlays/
+	@cd $(CURDIR)/$(OUTDIR); zip -r -q -9 $(APP_TITLE)-Overlay.zip switch; cd $(CURDIR)
 
 #---------------------------------------------------------------------------------
 clean:
-	@echo " RM   " $(BUILD) $(OUTDIR) SdOut
-	@rm -fr $(BUILD) $(OUTDIR) SdOut
+	@echo " RM   " $(BUILD) $(OUTDIR)
+	@rm -fr $(BUILD) $(OUTDIR)
 
 #---------------------------------------------------------------------------------
 install: all

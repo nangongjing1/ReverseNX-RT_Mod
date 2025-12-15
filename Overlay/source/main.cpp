@@ -204,7 +204,7 @@ public:
 	virtual tsl::elm::Element* createUI() override {
 		// A OverlayFrame is the base element every overlay consists of. This will draw the default Title and Subtitle.
 		// If you need more information in the header or want to change it's look, use a HeaderOverlayFrame.
-		auto frame = new tsl::elm::OverlayFrame("底座转换", "南宫镜 汉化");
+		auto frame = new tsl::elm::OverlayFrame("底座转换",std::string("南宫镜 ") + APP_VERSION);
 
 		// A list that can contain sub elements and handles scrolling
 		auto list = new tsl::elm::List();
@@ -377,7 +377,7 @@ public:
 	// Called when this Gui gets loaded to create the UI
 	// Allocate all elements on the heap. libtesla will make sure to clean them up when not needed anymore
 	virtual tsl::elm::Element* createUI() override {
-		auto frame = new tsl::elm::OverlayFrame("底座转换", "南宫镜 汉化");
+		auto frame = new tsl::elm::OverlayFrame("底座转换",std::string("南宫镜 ") + APP_VERSION);
 		return frame;
 	}
 
