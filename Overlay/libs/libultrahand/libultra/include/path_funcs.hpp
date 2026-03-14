@@ -14,20 +14,12 @@
  *   of the project's documentation and must remain intact.
  * 
  *  Licensed under both GPLv2 and CC-BY-4.0
- *  Copyright (c) 2023-2025 ppkantorski
+ *  Copyright (c) 2023-2026 ppkantorski
  ********************************************************************************/
 
 #pragma once
 
-#ifndef PATH_FUNCS_HPP
-#define PATH_FUNCS_HPP
-
-#if !USING_FSTREAM_DIRECTIVE // For not using fstream (needs implementing)
 #include <stdio.h>
-#else
-#include <fstream>
-#endif
-
 #include <memory>
 #include <dirent.h>
 #include <sys/stat.h>
@@ -36,6 +28,7 @@
 #include "get_funcs.hpp"
 #include <queue>
 #include <mutex>
+#include <unordered_set>
 
 
 namespace ult {
@@ -143,7 +136,7 @@ namespace ult {
      *
      * @param pathPattern The pattern used to match and delete files or directories.
      */
-    void deleteFileOrDirectoryByPattern(const std::string& pathPattern, const std::string& logSource = "");
+    void deleteFileOrDirectoryByPattern(const std::string& pathPattern, const std::string& logSourc = "", const std::unordered_set<std::string>* filterSet = nullptr);
     
     
     void moveDirectory(const std::string& sourcePath, const std::string& destinationPath,
@@ -176,12 +169,16 @@ namespace ult {
      *
      * This function identifies files or directories that match the `sourcePathPattern` and moves them to the `destinationPath`.
      * It processes each matching entry in the source directory pattern and moves them to the specified destination.
+     * Files/directories in the filterSet will be skipped.
      *
      * @param sourcePathPattern The pattern used to match files or directories to be moved.
      * @param destinationPath The destination directory where matching files or directories will be moved.
+     * @param logSource Optional log source identifier.
+     * @param logDestination Optional log destination identifier.
+     * @param filterSet Optional set of paths to exclude from moving (nullptr to move all).
      */
     void moveFilesOrDirectoriesByPattern(const std::string& sourcePathPattern, const std::string& destinationPath,
-        const std::string& logSource = "", const std::string& logDestination = "");
+        const std::string& logSource = "", const std::string& logDestination = "", const std::unordered_set<std::string>* filterSet = nullptr);
     
     
     
@@ -227,12 +224,16 @@ namespace ult {
      *
      * This function identifies files or directories that match the `sourcePathPattern` and copies them to the `toDirectory`.
      * It processes each matching entry in the source directory pattern and copies them to the specified destination.
+     * Files/directories in the filterSet will be skipped.
      *
      * @param sourcePathPattern The pattern used to match files or directories to be copied.
      * @param toDirectory The destination directory where matching files or directories will be copied.
+     * @param logSource Optional log source identifier.
+     * @param logDestination Optional log destination identifier.
+     * @param filterSet Optional set of paths to exclude from copying (nullptr to copy all).
      */
     void copyFileOrDirectoryByPattern(const std::string& sourcePathPattern, const std::string& toDirectory,
-        const std::string& logSource = "", const std::string& logDestination = "");
+        const std::string& logSource = "", const std::string& logDestination = "", const std::unordered_set<std::string>* filterSet = nullptr);
     
     
     
@@ -254,7 +255,6 @@ namespace ult {
     /**
      * @brief For each match of the wildcard pattern, creates an empty text file
      *        named basename.txt inside the output directory.
-     *        Uses FILE* if !USING_FSTREAM_DIRECTIVE is defined, otherwise uses std::ofstream.
      *
      * @param wildcardPattern A path with a wildcard, such as /some/path/[*].
      *                        Each match results in a file named after the basename.
@@ -275,5 +275,3 @@ namespace ult {
      */
     void dotCleanDirectory(const std::string& sourcePath);
 }
-
-#endif

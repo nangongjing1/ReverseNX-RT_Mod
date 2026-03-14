@@ -15,7 +15,7 @@
  *   of the project's documentation and must remain intact.
  * 
  *  Licensed under both GPLv2 and CC-BY-4.0
- *  Copyright (c) 2023-2025 ppkantorski
+ *  Copyright (c) 2023-2026 ppkantorski
  ********************************************************************************/
 
 #include "path_funcs.hpp"
@@ -156,7 +156,7 @@ namespace ult {
         }
     }
     
-    #if !USING_FSTREAM_DIRECTIVE
+    
     void writeLog(FILE* logFile, const std::string& line) {
         if (logFile) {
             std::lock_guard<std::mutex> lock(logMutex2);
@@ -169,20 +169,6 @@ namespace ult {
             #endif
         }
     }
-    #else
-    void writeLog(std::ofstream& logFile, const std::string& line) {
-        if (logFile.is_open()) {
-            std::lock_guard<std::mutex> lock(logMutex2);
-            logFile << line << std::endl;
-            logFile.flush(); // Ensure data is written immediately
-        } else {
-            #if USING_LOGGING_DIRECTIVE
-            if (!disableLogging)
-                logMessage("Failed to write to log file.");
-            #endif
-        }
-    }
-    #endif
     
     /**
      * @brief Creates a text file with the specified content.
@@ -196,7 +182,6 @@ namespace ult {
         // Create parent directory first
         createDirectory(getParentDirFromPath(filePath));
         
-    #if !USING_FSTREAM_DIRECTIVE
         FileGuard file(fopen(filePath.c_str(), "w"));
         if (file.get()) {
             fputs(content.c_str(), file.get());
@@ -206,18 +191,6 @@ namespace ult {
                 logMessage("Error: Unable to create file " + filePath);
             #endif
         }
-    #else
-        std::ofstream file(filePath);
-        if (file.is_open()) {
-            file << content;
-            file.close();
-        } else {
-            #if USING_LOGGING_DIRECTIVE
-            if (!disableLogging)
-                logMessage("Error: Unable to create file " + filePath);
-            #endif
-        }
-    #endif
     }
     
     /**
@@ -255,7 +228,6 @@ namespace ult {
             
             // Write log for single file deletion if needed
             if (needsLogging && !successfulDeletions.empty()) {
-    #if !USING_FSTREAM_DIRECTIVE
                 createDirectory(getParentDirFromPath(logSource));
                 if (FILE* logFile = fopen(logSource.c_str(), "a")) {
                     writeLog(logFile, pathToDelete);
@@ -267,20 +239,6 @@ namespace ult {
                         logMessage("Failed to open source log file: " + logSource);
                 }
                 #endif
-    #else
-                createDirectory(getParentDirFromPath(logSource));
-                std::ofstream logSourceFile(logSource, std::ios::app);
-                if (logSourceFile.is_open()) {
-                    writeLog(logSourceFile, pathToDelete);
-                    logSourceFile.close();
-                }
-                #if USING_LOGGING_DIRECTIVE
-                else {
-                    if (!disableLogging)
-                        logMessage("Failed to open source log file: " + logSource);
-                }
-                #endif
-    #endif
             }
             return;
         }
@@ -383,7 +341,6 @@ namespace ult {
         
         // Batch write all successful deletions to log file at the end
         if (needsLogging && !successfulDeletions.empty()) {
-    #if !USING_FSTREAM_DIRECTIVE
             createDirectory(getParentDirFromPath(logSource));
             if (FILE* logFile = fopen(logSource.c_str(), "a")) {
                 for (const auto& deletedPath : successfulDeletions) {
@@ -397,22 +354,6 @@ namespace ult {
                     logMessage("Failed to open source log file: " + logSource);
             }
             #endif
-    #else
-            createDirectory(getParentDirFromPath(logSource));
-            std::ofstream logSourceFile(logSource, std::ios::app);
-            if (logSourceFile.is_open()) {
-                for (const auto& deletedPath : successfulDeletions) {
-                    writeLog(logSourceFile, deletedPath);
-                }
-                logSourceFile.close();
-            }
-            #if USING_LOGGING_DIRECTIVE
-            else {
-                if (!disableLogging)
-                    logMessage("Failed to open source log file: " + logSource);
-            }
-            #endif
-    #endif
         }
     }
     
@@ -421,18 +362,27 @@ namespace ult {
      *
      * This function deletes files or directories specified by `pathPattern` by matching against a pattern.
      * It identifies files or directories that match the pattern and deletes them.
+     * Files/directories in the filterSet will be skipped.
      *
      * @param pathPattern The pattern used to match and delete files or directories.
+     * @param logSource Optional log source identifier.
+     * @param filterSet Optional set of paths to exclude from deletion (nullptr to delete all).
      */
-    void deleteFileOrDirectoryByPattern(const std::string& pathPattern, const std::string& logSource) {
-        //logMessage("pathPattern: "+pathPattern);
+    void deleteFileOrDirectoryByPattern(const std::string& pathPattern, const std::string& logSource, 
+        const std::unordered_set<std::string>* filterSet) {
+        
         fileList = getFilesListByWildcards(pathPattern);
         
         for (auto& path : fileList) {
-            //logMessage("path: "+path);
-            deleteFileOrDirectory(path, logSource);
+            // Check filter before deleting
+            const bool shouldDelete = !filterSet || filterSet->find(path) == filterSet->end();
+            
+            if (shouldDelete) {
+                deleteFileOrDirectory(path, logSource);
+            }
             path = "";
         }
+        
         fileList.clear();
         fileList.shrink_to_fit();
     }
@@ -543,8 +493,7 @@ namespace ult {
     #endif
                 return;
             }
-    
-            //bool hasContent = false;
+
             dirent* entry;
             
             while ((entry = readdir(dir)) != nullptr) {
@@ -552,8 +501,6 @@ namespace ult {
                 if (name[0] == '.' && (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'))) {
                     continue;
                 }
-    
-                //hasContent = true;
     
                 // Build full paths
                 std::string fullSrcPath = srcPath;
@@ -695,7 +642,6 @@ namespace ult {
         // Only write to log files if the move was successful
         // This is the key optimization - logs are only opened when actually needed!
         if (moveSuccess) {
-    #if !USING_FSTREAM_DIRECTIVE
             if (!logSource.empty()) {
                 createDirectory(getParentDirFromPath(logSource));
                 if (FILE* logFile = fopen(logSource.c_str(), "a")) {
@@ -723,37 +669,6 @@ namespace ult {
                 }
                 #endif
             }
-    #else
-            if (!logSource.empty()) {
-                createDirectory(getParentDirFromPath(logSource));
-                std::ofstream logSourceFile(logSource, std::ios::app);
-                if (logSourceFile.is_open()) {
-                    writeLog(logSourceFile, sourcePath);
-                    logSourceFile.close();
-                }
-                #if USING_LOGGING_DIRECTIVE
-                else {
-                    if (!disableLogging)
-                        logMessage("Failed to open source log file: " + logSource);
-                }
-                #endif
-            }
-    
-            if (!logDestination.empty()) {
-                createDirectory(getParentDirFromPath(logDestination));
-                std::ofstream logDestFile(logDestination, std::ios::app);
-                if (logDestFile.is_open()) {
-                    writeLog(logDestFile, finalDestPath);
-                    logDestFile.close();
-                }
-                #if USING_LOGGING_DIRECTIVE
-                else {
-                    if (!disableLogging)
-                        logMessage("Failed to open destination log file: " + logDestination);
-                }
-                #endif
-            }
-    #endif
         }
     
         return moveSuccess;
@@ -783,43 +698,40 @@ namespace ult {
      *
      * This function identifies files or directories that match the `sourcePathPattern` and moves them to the `destinationPath`.
      * It processes each matching entry in the source directory pattern and moves them to the specified destination.
+     * Files/directories in the filterSet will be skipped.
      *
      * @param sourcePathPattern The pattern used to match files or directories to be moved.
      * @param destinationPath The destination directory where matching files or directories will be moved.
+     * @param logSource Optional log source identifier.
+     * @param logDestination Optional log destination identifier.
+     * @param filterSet Optional set of paths to exclude from moving (nullptr to move all).
      */
     void moveFilesOrDirectoriesByPattern(const std::string& sourcePathPattern, const std::string& destinationPath,
-        const std::string& logSource, const std::string& logDestination) {
+        const std::string& logSource, const std::string& logDestination, const std::unordered_set<std::string>* filterSet) {
         
         fileList = getFilesListByWildcards(sourcePathPattern);
         
-        //std::string fileListAsString;
-        //for (const std::string& filePath : fileList)
-        //    fileListAsString += filePath + "\n";
-        //logMessage("File List:\n" + fileListAsString);
-        
-        //logMessage("pre loop");
         std::string folderName, fixedDestinationPath;
         
         // Iterate through the file list
         for (std::string& sourceFileOrDirectory : fileList) {
-            //logMessage("sourceFileOrDirectory: "+sourceFileOrDirectory);
-            // if sourceFile is a file (Needs condition handling)
-            if (!isDirectory(sourceFileOrDirectory)) {
-                //logMessage("destinationPath: "+destinationPath);
-                moveFileOrDirectory(sourceFileOrDirectory, destinationPath, logSource, logDestination);
-            } else if (isDirectory(sourceFileOrDirectory)) {
-                // if sourceFile is a directory (needs conditoin handling)
-                folderName = getNameFromPath(sourceFileOrDirectory);
-                fixedDestinationPath = destinationPath + folderName + "/";
-                
-                //logMessage("fixedDestinationPath: "+fixedDestinationPath);
-                
-                moveFileOrDirectory(sourceFileOrDirectory, fixedDestinationPath, logSource, logDestination);
+            // Check filter before moving
+            const bool shouldMove = !filterSet || filterSet->find(sourceFileOrDirectory) == filterSet->end();
+            
+            if (shouldMove) {
+                // if sourceFile is a file
+                if (!isDirectory(sourceFileOrDirectory)) {
+                    moveFileOrDirectory(sourceFileOrDirectory, destinationPath, logSource, logDestination);
+                } else if (isDirectory(sourceFileOrDirectory)) {
+                    // if sourceFile is a directory
+                    folderName = getNameFromPath(sourceFileOrDirectory);
+                    fixedDestinationPath = destinationPath + folderName + "/";
+                    moveFileOrDirectory(sourceFileOrDirectory, fixedDestinationPath, logSource, logDestination);
+                }
             }
             sourceFileOrDirectory = "";
         }
-        //logMessage("post loop");
-
+    
         fileList.clear();
         fileList.shrink_to_fit();
     }
@@ -842,8 +754,7 @@ namespace ult {
         
         // Use heap allocation for the buffer to avoid stack overflow with large buffer sizes
         std::unique_ptr<char[]> buffer(new char[bufferSize]);
-    
-    #if !USING_FSTREAM_DIRECTIVE
+        
         FILE* srcFile = nullptr;
         FILE* destFile = nullptr;
         
@@ -927,67 +838,6 @@ namespace ult {
             copyPercentage.store(-1, std::memory_order_release);
             return;
         }
-    
-    #else
-        std::ifstream srcFile;
-        std::ofstream destFile;
-        
-        // Retry loop for file opening
-        for (size_t retryCount = 0; retryCount <= maxRetries; ++retryCount) {
-            srcFile.open(fromFile, std::ios::binary);
-            destFile.open(toFile, std::ios::binary);
-            
-            if (srcFile.is_open() && destFile.is_open()) {
-                break;
-            }
-            
-            srcFile.close();
-            destFile.close();
-            
-            if (retryCount == maxRetries) {
-                #if USING_LOGGING_DIRECTIVE
-                if (!disableLogging)
-                    logMessage("Error: Failed to open files after " + std::to_string(maxRetries) + " retries");
-                #endif
-                return;
-            }
-        }
-        
-        // Main copy loop
-        char* bufferPtr = buffer.get();
-        while (srcFile.read(bufferPtr, bufferSize) || srcFile.gcount() > 0) {
-            if (abortFileOp.load(std::memory_order_acquire)) {
-                srcFile.close();
-                destFile.close();
-                remove(toFile.c_str());
-                copyPercentage.store(-1, std::memory_order_release);
-                return;
-            }
-            
-            std::streamsize bytesToWrite = srcFile.gcount();
-            destFile.write(bufferPtr, bytesToWrite);
-            
-            if (!destFile.good()) {
-                #if USING_LOGGING_DIRECTIVE
-                if (!disableLogging)
-                    logMessage("Error writing to destination file");
-                #endif
-                srcFile.close();
-                destFile.close();
-                remove(toFile.c_str());
-                copyPercentage.store(-1, std::memory_order_release);
-                return;
-            }
-            
-            totalBytesCopied += bytesToWrite;
-            if (totalSize > 0) {
-                copyPercentage.store(static_cast<int>(100 * totalBytesCopied / totalSize), std::memory_order_release);
-            }
-        }
-        
-        srcFile.close();
-        destFile.close();
-    #endif
         
         // Only open and write to log files if they're needed - this is the key optimization!
         if (!logSource.empty()) {
@@ -1213,7 +1063,6 @@ namespace ult {
                 
                 std::string logToPath = actualToPath;
                 
-    #if !USING_FSTREAM_DIRECTIVE
                 if (!logSource.empty()) {
                     createDirectory(getParentDirFromPath(logSource));
                     if (FILE* logFile = fopen(logSource.c_str(), "a")) {
@@ -1241,37 +1090,6 @@ namespace ult {
                     }
                     #endif
                 }
-    #else
-                if (!logSource.empty()) {
-                    createDirectory(getParentDirFromPath(logSource));
-                    std::ofstream logSourceFile(logSource, std::ios::app);
-                    if (logSourceFile.is_open()) {
-                        writeLog(logSourceFile, logFromPath);
-                        logSourceFile.close();
-                    }
-                    #if USING_LOGGING_DIRECTIVE
-                    else {
-                        if (!disableLogging)
-                            logMessage("Failed to open source log file: " + logSource);
-                    }
-                    #endif
-                }
-    
-                if (!logDestination.empty()) {
-                    createDirectory(getParentDirFromPath(logDestination));
-                    std::ofstream logDestFile(logDestination, std::ios::app);
-                    if (logDestFile.is_open()) {
-                        writeLog(logDestFile, logToPath);
-                        logDestFile.close();
-                    }
-                    #if USING_LOGGING_DIRECTIVE
-                    else {
-                        if (!disableLogging)
-                            logMessage("Failed to open destination log file: " + logDestination);
-                    }
-                    #endif
-                }
-    #endif
             }
         }
     
@@ -1297,27 +1115,41 @@ namespace ult {
      *
      * This function identifies files or directories that match the `sourcePathPattern` and copies them to the `toDirectory`.
      * It processes each matching entry in the source directory pattern and copies them to the specified destination.
+     * Files/directories in the filterSet will be skipped.
      *
      * @param sourcePathPattern The pattern used to match files or directories to be copied.
      * @param toDirectory The destination directory where matching files or directories will be copied.
+     * @param logSource Optional log source identifier.
+     * @param logDestination Optional log destination identifier.
+     * @param filterSet Optional set of paths to exclude from copying (nullptr to copy all).
      */
     void copyFileOrDirectoryByPattern(const std::string& sourcePathPattern, const std::string& toDirectory,
-        const std::string& logSource, const std::string& logDestination) {
+        const std::string& logSource, const std::string& logDestination, const std::unordered_set<std::string>* filterSet) {
+        
         fileList = getFilesListByWildcards(sourcePathPattern);
+        
+        // Calculate total size only for files that will actually be copied
         long long totalSize = 0;
         for (const std::string& path : fileList) {
-            totalSize += getTotalSize(path);
+            const bool shouldCopy = !filterSet || filterSet->find(path) == filterSet->end();
+            if (shouldCopy) {
+                totalSize += getTotalSize(path);
+            }
         }
     
         long long totalBytesCopied = 0;
         for (std::string& sourcePath : fileList) {
-            copyFileOrDirectory(sourcePath, toDirectory, &totalBytesCopied, totalSize, logSource, logDestination);
+            // Check filter before copying
+            const bool shouldCopy = !filterSet || filterSet->find(sourcePath) == filterSet->end();
+            
+            if (shouldCopy) {
+                copyFileOrDirectory(sourcePath, toDirectory, &totalBytesCopied, totalSize, logSource, logDestination);
+            }
             sourcePath = "";
         }
-
+        
         fileList.clear();
         fileList.shrink_to_fit();
-        //copyPercentage.store(-1, std::memory_order_release);  // Reset after operation
     }
 
 
@@ -1350,7 +1182,6 @@ namespace ult {
         for (auto& path : fileList) {
             // Generate the corresponding path in the target directory by replacing the source path
             updatedPath = targetPath + path.substr(sourcePath.size());
-            //logMessage("mirror-delete: "+path+" "+updatedPath);
             if (mode == "delete")
                 deleteFileOrDirectory(updatedPath);
             else if (mode == "copy") {
@@ -1359,7 +1190,7 @@ namespace ult {
             }
             path = "";
         }
-        //fileList.clear();
+        
         fileList.clear();
         fileList.shrink_to_fit();
     }
@@ -1367,7 +1198,6 @@ namespace ult {
     /**
      * @brief For each match of the wildcard pattern, creates an empty text file
      *        named basename.txt inside the output directory.
-     *        Uses FILE* if !USING_FSTREAM_DIRECTIVE is defined, otherwise uses std::ofstream.
      *
      * @param wildcardPattern A path with a wildcard, such as /some/path/[*].
      *                        Each match results in a file named after the basename.
@@ -1398,14 +1228,9 @@ namespace ult {
             }
     
             outFile = outputPrefix + baseName;
-    
-        #if !USING_FSTREAM_DIRECTIVE
+            
             FileGuard fp(std::fopen(outFile.c_str(), "wb"));
             // File automatically closed by FileGuard destructor
-        #else
-            std::ofstream ofs(outFile, std::ios::binary | std::ios::trunc);
-            ofs.close();
-        #endif
             fullPath = "";
         }
         fileList.clear();
