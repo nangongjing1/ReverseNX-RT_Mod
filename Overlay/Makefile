@@ -41,6 +41,14 @@ CFLAGS	:= -Os -ffunction-sections -fdata-sections -flto -ffast-math -fomit-frame
 					-fuse-linker-plugin -finline-small-functions -fno-strict-aliasing -frename-registers -falign-functions=16 \
 					$(ARCH) $(DEFINES) -DVERSION_STRING=\"$(subst $(SPACE),\$(SPACE),${APP_VERSION})\" -DNDEBUG
 
+# Exception wrap utilization (for smaller compilation size)
+CFLAGS += -DUSE_EXCEPTION_WRAP=1
+
+# Requires USE_EXCEPTION_WRAP and inclusion of exception_wrap.hpp in main
+LDFLAGS += -Wl,-wrap,__cxa_throw \
+           -Wl,-wrap,_Unwind_Resume \
+           -Wl,-wrap,__gxx_personality_v0
+
 CFLAGS	+=	$(INCLUDE) -D__SWITCH__ -D__OVERLAY__ -I$(PORTLIBS)/include/freetype2 $(pkg-config --cflags --libs python3) -Wno-deprecated-declarations 
 CFLAGS	+=	-DAPP_VERSION=\"$(APP_VERSION)\" -DAPP_TITLE=\"$(APP_TITLE)\" -DAPP_AUTHOR=\""$(APP_AUTHOR)"\"
 
@@ -48,7 +56,7 @@ CXXFLAGS	:= $(CFLAGS) -fexceptions -std=c++26 -fno-rtti -fno-exceptions -fno-rtt
 
 
 ASFLAGS	:=	$(ARCH)
-LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,--gc-sections -Wl,--strip-all -Wl,--discard-all -Wl,--gc-sections
+LDFLAGS	+=	-specs=$(DEVKITPRO)/libnx/switch.specs $(ARCH) -Wl,-Map,$(notdir $*.map) -Wl,--gc-sections -Wl,--strip-all -Wl,--discard-all -Wl,--gc-sections
 
 LIBS	:= -lnx
 
