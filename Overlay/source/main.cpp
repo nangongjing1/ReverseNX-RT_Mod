@@ -1,5 +1,4 @@
 #define TESLA_INIT_IMPL // If you have more than one file using the tesla header, only define this in the main one
-#include <exception_wrap.hpp>
 #include <tesla.hpp>    // The Tesla Header
 #include "SaltyNX.h"
 #include <dirent.h>
@@ -153,7 +152,7 @@ public:
 
 		auto *clickableListItem2 = new tsl::elm::ListItem("默认");
 		clickableListItem2->setClickListener([this](u64 keys) { 
-			if ((keys & KEY_A) && PluginRunning) {
+			if ((keys & HidNpadButton_A) && PluginRunning) {
 				if (_isDocked) ReverseNX_RT->res.docked_res = res_mode_default;
 				else ReverseNX_RT->res.handheld_res = res_mode_default;
 				tsl::goBack();
@@ -169,7 +168,7 @@ public:
 			snprintf(Hz, sizeof(Hz), "%dx%d", resolutions[i].first, resolutions[i].second);
 			auto *clickableListItem = new tsl::elm::ListItem(Hz);
 			clickableListItem->setClickListener([this, i](u64 keys) { 
-				if ((keys & KEY_A) && PluginRunning) {
+				if ((keys & HidNpadButton_A) && PluginRunning) {
 					if (_isDocked) ReverseNX_RT->res.docked_res = (res_mode)i;
 					else ReverseNX_RT->res.handheld_res = (res_mode)i;
 					tsl::goBack();
@@ -251,7 +250,7 @@ public:
 
 			auto *clickableListItem = new tsl::elm::ListItem("更改系统控制");
 			clickableListItem->setClickListener([](u64 keys) { 
-				if ((keys & KEY_A) && PluginRunning) {
+				if ((keys & HidNpadButton_A) && PluginRunning) {
 					ReverseNX_RT->def = !(ReverseNX_RT->def);
 					tsl::goBack();
 					tsl::changeTo<GuiTest>(1, 2, true);
@@ -267,7 +266,7 @@ public:
 
 				auto *clickableListItem2 = new tsl::elm::ListItem("更改模式");
 				clickableListItem2->setClickListener([](u64 keys) { 
-					if ((keys & KEY_A) && PluginRunning) {
+					if ((keys & HidNpadButton_A) && PluginRunning) {
 						ReverseNX_RT->isDocked = !(ReverseNX_RT->isDocked);
 						return true;
 					}
@@ -279,7 +278,7 @@ public:
 				if (ReverseNX_RT->wasDDRused) {
 					auto *clickableListItem3 = new tsl::elm::ListItem("更改掌机模式 DDR");
 					clickableListItem3->setClickListener([](u64 keys) { 
-						if ((keys & KEY_A) && PluginRunning) {
+						if ((keys & HidNpadButton_A) && PluginRunning) {
 							tsl::changeTo<ResolutionModeMenu>(false);
 							return true;
 						}
@@ -290,7 +289,7 @@ public:
 
 					auto *clickableListItem4 = new tsl::elm::ListItem("更改底座模式 DDR");
 					clickableListItem4->setClickListener([](u64 keys) { 
-						if ((keys & KEY_A) && PluginRunning) {
+						if ((keys & HidNpadButton_A) && PluginRunning) {
 							tsl::changeTo<ResolutionModeMenu>(true);
 							return true;
 						}
@@ -303,7 +302,7 @@ public:
 
 			auto *clickableListItem3 = new tsl::elm::ListItem("保存当前设置");
 			clickableListItem3->setClickListener([](u64 keys) { 
-				if ((keys & KEY_A) && PluginRunning) {
+				if ((keys & HidNpadButton_A) && PluginRunning) {
 					if (writeSave())
 						snprintf(saveChar, sizeof(saveChar), "设置保存成功!");
 					else snprintf(saveChar, sizeof(saveChar), "设置保存失败!");
@@ -362,7 +361,7 @@ public:
 
 	// Called once every frame to handle inputs not handled by other UI elements
 	virtual bool handleInput(u64 keysDown, u64 keysHeld, const HidTouchState &touchPos, HidAnalogStickState joyStickPosLeft, HidAnalogStickState joyStickPosRight) override {
-		if (keysDown & KEY_B) {
+		if (keysDown & HidNpadButton_B) {
 			tsl::goBack();
 			tsl::goBack();
 			return true;
