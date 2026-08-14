@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -22,6 +22,13 @@
     #include <mesosphere/arch/arm64/kern_k_interrupt_controller.hpp>
     namespace ams::kern {
         using ams::kern::arch::arm64::KInterruptController;
+    }
+
+#elif defined(ATMOSPHERE_ARCH_ARM)
+
+    #include <mesosphere/arch/arm/kern_k_interrupt_controller.hpp>
+    namespace ams::kern {
+        using ams::kern::arch::arm::KInterruptController;
     }
 
 #else

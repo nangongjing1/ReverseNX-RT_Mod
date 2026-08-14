@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -317,6 +317,38 @@ namespace ams::svc::codegen::impl {
                 return true;
             }
 
+            template<typename Conversion, size_t ParameterIndex = 0>
+            static constexpr void SanitizeInputBooleans(MetaCodeGenerator &mcg) {
+                /* Get the input layout. */
+                constexpr auto InputLayout = Conversion::LayoutForSvc.GetInputLayout();
+
+                /* Check if we're done. */
+                if constexpr (ParameterIndex < InputLayout.GetNumParameters()) {
+                    /* Get the relevant parameter. */
+                    constexpr auto Param = InputLayout.GetParameter(ParameterIndex);
+
+                    /* Handle the case where the parameter is a boolean. */
+                    if constexpr (Param.IsBoolean()) {
+                        /* Boolean parameters should have one location. */
+                        static_assert(Param.GetNumLocations() == 1);
+
+                        /* Get the location. */
+                        constexpr auto Loc = Param.GetLocation(0);
+
+                        /* TODO: Support boolean parameters passed-by-stack. */
+                        static_assert(Loc.GetStorage() == Storage::Register);
+
+                        /* Convert the input to boolean. */
+                        mcg.template ConvertToBoolean<Loc.GetIndex()>();
+                    }
+
+                    /* Handle the next parameter. */
+                    if constexpr (ParameterIndex + 1 < InputLayout.GetNumParameters()) {
+                        SanitizeInputBooleans<Conversion, ParameterIndex + 1>(mcg);
+                    }
+                }
+            }
+
             template<typename... T>
             struct TypeIndexFilter {
 
@@ -353,7 +385,7 @@ namespace ams::svc::codegen::impl {
             };
 
             template<auto Allocator, typename FirstOperation, typename...OtherOperations>
-            static constexpr auto GetModifiedOperations(std::tuple<FirstOperation, OtherOperations...> ops) {
+            static constexpr auto GetModifiedOperations(std::tuple<FirstOperation, OtherOperations...>) {
                 constexpr size_t ModifyRegister = [] {
                     auto allocator = Allocator;
                     return allocator.AllocateFirstFree();
@@ -435,6 +467,9 @@ namespace ams::svc::codegen::impl {
                 if constexpr (UsedStackSpace > 0) {
                     mcg.template AllocateStackSpace<UsedStackSpace>();
                 }
+
+                /* Sanitize all input booleans. */
+                SanitizeInputBooleans<Conversion>(mcg);
 
                 /* Generate code for before operations. */
                 if constexpr (Conversion::NumBeforeOperations > 0) {
@@ -528,6 +563,7 @@ namespace ams::svc::codegen::impl {
 
 /* Set omit-frame-pointer to prevent GCC from emitting MOV X29, SP instructions. */
 #pragma GCC push_options
+#pragma GCC optimize ("-O2")
 #pragma GCC optimize ("omit-frame-pointer")
 
             static ALWAYS_INLINE ReturnType WrapSvcFunction() {
@@ -535,7 +571,11 @@ namespace ams::svc::codegen::impl {
                 GenerateCodeForMetaCode<CodeGenerator, BeforeMetaCode>();
                 ON_SCOPE_EXIT { GenerateCodeForMetaCode<CodeGenerator, AfterMetaCode>(); };
 
+                /* Cast the generated function to the generic funciton pointer type. */
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wcast-function-type"
                 return reinterpret_cast<ReturnType (*)()>(Function)();
+                #pragma GCC diagnostic pop
             }
 
 #pragma GCC pop_options

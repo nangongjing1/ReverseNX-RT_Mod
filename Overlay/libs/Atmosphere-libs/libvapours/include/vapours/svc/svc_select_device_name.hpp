@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -26,6 +26,9 @@
 
 #else
 
-    #error "Unknown board for svc::DeviceName"
+    #include <vapours/svc/board/generic/svc_device_name.hpp>
+    namespace ams::svc {
+        using namespace ams::svc::board::generic;
+    }
 
 #endif

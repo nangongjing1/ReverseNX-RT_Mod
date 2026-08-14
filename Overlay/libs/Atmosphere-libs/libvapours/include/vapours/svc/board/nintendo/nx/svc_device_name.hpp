@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License
@@ -61,5 +61,20 @@ namespace ams::svc::board::nintendo::nx {
 
         DeviceName_Count,
     };
+
+    namespace impl {
+
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeVi         = 0x2280 * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeViFatal    = 0x200  * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeNvservices = 0x704  * 4_KB;
+        constexpr inline const size_t RequiredNonSecureSystemMemorySizeMisc       = 0x80   * 4_KB;
+
+    }
+
+    constexpr inline const size_t RequiredNonSecureSystemMemorySize = impl::RequiredNonSecureSystemMemorySizeVi         +
+                                                                      impl::RequiredNonSecureSystemMemorySizeNvservices +
+                                                                      impl::RequiredNonSecureSystemMemorySizeMisc;
+
+    constexpr inline const size_t RequiredNonSecureSystemMemorySizeWithFatal = RequiredNonSecureSystemMemorySize + impl::RequiredNonSecureSystemMemorySizeViFatal;
 
 }

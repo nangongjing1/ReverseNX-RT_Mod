@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2020 Atmosphère-NX
+ * Copyright (c) Atmosphère-NX
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms and conditions of the GNU General Public License,
@@ -20,7 +20,7 @@
 namespace ams::kern {
 
     constexpr u32 InitialProcessBinaryMagic      = util::FourCC<'I','N','I','1'>::Code;
-    constexpr size_t InitialProcessBinarySizeMax = 0xC00000;
+    constexpr size_t InitialProcessBinarySizeMax = 12_MB;
 
     struct InitialProcessBinaryHeader {
         u32 magic;
@@ -29,10 +29,26 @@ namespace ams::kern {
         u32 reserved;
     };
 
-    NOINLINE void CopyInitialProcessBinaryToKernelMemory();
-    NOINLINE void CreateAndRunInitialProcesses();
+    struct InitialProcessBinaryLayout {
+        uintptr_t address;
+        uintptr_t _08;
+        uintptr_t kern_address;
+    };
+
+    struct InitialProcessBinaryLayoutWithSize {
+        InitialProcessBinaryLayout layout;
+        size_t size;
+    };
+
+    KPhysicalAddress GetInitialProcessBinaryPhysicalAddress();
+    size_t GetInitialProcessBinarySize();
+    void SetInitialProcessBinaryPhysicalAddress(KPhysicalAddress phys_addr, size_t size);
 
     u64 GetInitialProcessIdMin();
     u64 GetInitialProcessIdMax();
+    size_t GetInitialProcessesSecureMemorySize();
+
+    NOINLINE size_t CopyInitialProcessBinaryToKernelMemory();
+    NOINLINE void CreateAndRunInitialProcesses();
 
 }
